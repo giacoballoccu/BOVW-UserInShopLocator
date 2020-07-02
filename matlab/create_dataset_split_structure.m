@@ -14,41 +14,36 @@
 %    files: {1x1074 cell}; cell array with file names withouth path, e.g. img_100.jpg
 %    train_id: [1x1074 logical]; Boolean array indicating training files
 %    test_id: [1x1074 logical];  Boolean array indicating test files                                   
-function data = create_dataset_split_structure(main_dir, file_ext)
-    category_dirs_train_path = strcat(main_dir, '/train_set/split_by_class_RGB')
-    category_dirs_train = dir(category_dirs_train_path);
-    category_dirs_test_path = strcat(main_dir, '/test_set/split_by_class_RGB');
-    category_dirs_test = dir(category_dirs_test_path);
-
-    %remove '..' and '.' directories
-    category_dirs_train(~cellfun(@isempty, regexp({category_dirs_train.name}, '\.*')))=[];
-    category_dirs_train(strcmp({category_dirs_train.name},'split.mat'))=[]; 
+function data = create_dataset_split_structure(main_dir, is_train, file_ext)
+    if is_train
+        category_dirs = strcat(main_dir, '/train_set/split_by_class_RGB')
+        category_dirs = dir(category_dirs);
+        %remove '..' and '.' directories
+        category_dirs(~cellfun(@isempty, regexp({category_dirs.name}, '\.*')))=[];
+        category_dirs(strcmp({category_dirs.name},'split.mat'))=[]; 
+    else 
+        category_dirs_path = strcat(main_dir, '/test_set/split_by_class_RGB');
+        category_dirs = dir(category_dirs_path);
+        %remove '..' and '.' directories
+        category_dirs(~cellfun(@isempty, regexp({category_dirs.name}, '\.*')))=[];
+        category_dirs(strcmp({category_dirs.name},'split.mat'))=[]; 
+    end
     
-    category_dirs_test(~cellfun(@isempty, regexp({category_dirs_test.name}, '\.*')))=[];
-    category_dirs_test(strcmp({category_dirs_test.name},'split.mat'))=[]; 
-    
-    for c = 1:length(category_dirs_train)
-        if isdir(fullfile(category_dirs_train_path,category_dirs_train(c).name)) && ~strcmp(category_dirs_train(c).name,'.') ...
-                && ~strcmp(category_dirs_train(c).name,'..')
-            imgdir = dir(fullfile(category_dirs_train_path,category_dirs_train(c).name, ['*.' file_ext]));
+    for c = 1:length(category_dirs)
+        if isdir(fullfile(category_dirs_path,category_dirs(c).name)) && ~strcmp(category_dirs(c).name,'.') ...
+                && ~strcmp(category_dirs(c).name,'..')
+            imgdir = dir(fullfile(category_dirs_path,category_dirs(c).name, ['*.' file_ext]));
             data(c).n_images = length(imgdir);
-            data(c).classname = category_dirs_train(c).name;
+            data(c).classname = category_dirs(c).name;
             data(c).files = {imgdir(:).name};
-            data(c).train_id = true(1,data(c).n_images);
-            data(c).test_id = false(1,data(c).n_images);
-
+            if is_train
+                data(c).train_id = true(1,data(c).n_images);
+                data(c).test_id = false(1,data(c).n_images);
+            else
+                data(c).train_id = false(1,data(c).n_images);
+                data(c).test_id = true(1,data(c).n_images);
+            end       
         end
     end
     
-%       for c = 1:length(category_dirs_test)
-%         if isdir(fullfile(category_dirs_test_path,category_dirs_test(c).name)) && ~strcmp(category_dirs_test(c).name,'.') ...
-%                 && ~strcmp(category_dirs_test(c).name,'..')
-%             imgdir = dir(fullfile(category_dirs_test_path,category_dirs_test(c).name, ['*.' file_ext]));
-%             data(c).n_images = length(imgdir);
-%             data(c).classname = category_dirs_test(c).name;
-%             data(c).files = {imgdir(:).name};
-%             data(c).train_id = false(1,data(c).n_images);
-%             data(c).test_id = true(1,data(c).n_images);
-%         end
-%     end
 end

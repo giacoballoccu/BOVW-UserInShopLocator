@@ -21,7 +21,7 @@
 %                                                                         %
 %   Part 1:  Load and quantize pre-computed image features                %
 %   Part 2:  Represent images by histograms of quantized features         %
-%   Part 3:  Classify images with nearest neighbor classifier             %
+%   Part 3:  Classify images with nearest neighbor classifi             %
 %                                                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -29,22 +29,24 @@ clear;
 close all;
 
 % DATASET
-dataset_dir='/train_set/train_RGB/split_by_class_RGB';
+dataset_dir='/train_set/split_by_class_RGB';
 
 % FEATURES extraction methods
 % 'sift' for sparse features detection (SIFT descriptors computed at  
 % Harris-Laplace keypoints) or 'dsift' for dense features detection (SIFT
 % descriptors computed at a grid of overlapped patches
 
-desc_name = 'sift';
-%desc_name = 'dsift';
+%desc_name = 'sift';
+desc_name = 'dsift';
 %desc_name = 'msdsift';
 
 % FLAGS
 do_create_folders_class = 0
 do_convert_input = 0
-do_feat_extraction = 1;
-do_split_sets = 1;
+do_feat_extraction_test = 1;
+do_feat_extraction_train = 0;
+do_split_sets_train = 0;
+do_split_sets_test = 1;
 
 do_form_codebook = 1;
 do_feat_quantization = 1;
@@ -91,13 +93,8 @@ testSet = table2cell(testSet);
 
 if do_create_folders_class
     for i = 1:16
-        %if ~exist(int2str(i), '/train_set/split_by_class_RGB/')
-            mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_RGB/'), int2str(i));
-        %end
-
-        %if ~exist(int2str(i), '/test_set/split_by_class_RGB/')
-            mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_RGB/'), int2str(i));
-        %end
+        mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_RGB/'), int2str(i));
+        mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_RGB/'), int2str(i));
     end
 end
 
@@ -122,19 +119,28 @@ end
 
 % Create a new dataset split
 file_split = 'split.mat';
-if do_split_sets    
-    data = create_dataset_split_structure(strcat(basepath, 'img/egocart'),file_ext);
+if do_split_sets_train    
+    data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 1 , file_ext);
     save(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split),'data');
 else
     load(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split));
 end
-classes = {data.classname}; % create cell array of class name strings
+
+if do_split_sets_test   
+    data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 0 , file_ext);
+    save(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/',file_split),'data');
+else
+    load(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/',file_split));
+end
+classes = {data_train.classname}; % create cell array of class name strings
 
 % Extract SIFT features fon training and test images
-if do_feat_extraction   
+if do_feat_extraction_train   
     extract_sift_features(fullfile(basepath,'img/egocart','/train_set/split_by_class_RGB/'),desc_name)    
 end
-
+if do_feat_extraction_test  
+    extract_sift_features(fullfile(basepath,'img/egocart','/test_set/split_by_class_RGB/'),desc_name)    
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,8 +162,8 @@ lasti=1;
 for i = 1:length(data)
      images_descs = get_descriptors_files(data,i,file_ext,desc_name,'train');
      for j = 1:length(images_descs) 
-        fname = fullfile(basepath,'img/images',dataset_dir,data(i).classname,images_descs{j});
-        fprintf('Loading %s /n',fname);
+        fname = fullfile(basepath,'img/egocart/',dataset_dir,data(i).classname,images_descs{j});
+        fprintf('Loading %s /n',fname, '\n');
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
         tmp.desc.imgfname=regexprep(fname,['.' desc_name],'.jpg');
@@ -192,7 +198,7 @@ lasti=1;
 for i = 1:length(data)
      images_descs = get_descriptors_files(data,i,file_ext,desc_name,'test');
      for j = 1:length(images_descs) 
-        fname = fullfile(basepath,'img/images',dataset_dir,data(i).classname,images_descs{j});
+        fname = fullfile(basepath,'img',dataset_dir,data(i).classname,images_descs{j});
         fprintf('Loading %s /n',fname);
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
@@ -240,3 +246,53 @@ if do_form_codebook
     VC = VC';%transpose for compatibility with following functions
     clear DESC;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% Part 2: represent images with BOF histograms %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                         %
+%   EXERCISE 2: Bag-of-Features image classification                      %
+%                                                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Represent each image by the normalized histogram of visual
+% word labels of its features. Compute word histogram H over 
+% the whole image, normalize histograms w.r.t. L1-norm.
+%
+% TODO:
+% 2.1 for each training and test image compute H. Hint: use
+%     Matlab function 'histc' to compute histograms.
+
+
+N = size(VC,1); % number of visual words
+
+for i=1:length(desc_train) 
+    visword = desc_train(i).visword;    
+    
+    %H =...
+  
+    % normalize bow-hist (L1 norm)
+    % ...
+  
+    % save histograms
+    %desc_train(i).bof = ...
+end
+
+for i=1:length(desc_test) 
+    visword = desc_test(i).visword;  
+    
+    %H =...
+  
+    % normalize bow-hist (L1 norm)
+    % ...
+    
+    % save histograms
+    %desc_test(i).bof = ...
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   End of EXERCISE 2                                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
