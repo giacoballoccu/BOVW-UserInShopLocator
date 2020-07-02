@@ -36,9 +36,9 @@ dataset_dir='/train_set/train_RGB/split_by_class_RGB';
 % Harris-Laplace keypoints) or 'dsift' for dense features detection (SIFT
 % descriptors computed at a grid of overlapped patches
 
-%desc_name = 'sift';
+desc_name = 'sift';
 %desc_name = 'dsift';
-desc_name = 'msdsift';
+%desc_name = 'msdsift';
 
 % FLAGS
 do_create_folders_class = 0
