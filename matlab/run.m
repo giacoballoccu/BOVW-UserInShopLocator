@@ -95,7 +95,7 @@ end
 lasti=1;
 for i = 1:length(data)
      images_descs = get_descriptors_files(data,i,file_ext,desc_name,'train');
-     for j = 1:length(images_descs) 
+     for j = 1:length(images_descs) .
         fname = fullfile(basepath,'img',dataset_dir,data(i).classname,images_descs{j});
         fprintf('Loading %s \n',fname);
         tmp = load(fname,'-mat');
