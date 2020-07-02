@@ -3,12 +3,10 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  ICPR 2014 Tutorial                                                     %
-%  Hands on Advanced Bag-of-Words Models for Visual Recognition           %
-%                                                                         %
-%  Instructors:                                                           %
-%  L. Ballan     <lamberto.ballan@unifi.it>                               %
-%  L. Seidenari  <lorenzo.seidenari@unifi.it>                             %
+%  Egocart remake                                                         %
+%                                                                         %   
+%  Giacomo Balloccu                                                       %
+%  Alessia Pisu                                                           %
 %                                                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -29,8 +27,8 @@ clear;
 close all;
 
 % DATASET
-dataset_dir='/train_set/split_by_class_RGB';
-
+dataset_dir_train ='/train_set/split_by_class_RGB';
+dataset_dir_test = '/test_set/split_by_class_RGB';
 % FEATURES extraction methods
 % 'sift' for sparse features detection (SIFT descriptors computed at  
 % Harris-Laplace keypoints) or 'dsift' for dense features detection (SIFT
@@ -43,10 +41,10 @@ desc_name = 'dsift';
 % FLAGS
 do_create_folders_class = 0
 do_convert_input = 0
-do_feat_extraction_test = 1;
+do_feat_extraction_test = 0;
 do_feat_extraction_train = 0;
 do_split_sets_train = 0;
-do_split_sets_test = 1;
+do_split_sets_test = 0;
 
 do_form_codebook = 1;
 do_feat_quantization = 1;
@@ -121,14 +119,14 @@ end
 file_split = 'split.mat';
 if do_split_sets_train    
     data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 1 , file_ext);
-    save(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split),'data');
+    save(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split),'data_train');
 else
     load(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split));
 end
 
 if do_split_sets_test   
-    data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 0 , file_ext);
-    save(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/',file_split),'data');
+    data_test = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 0 , file_ext);
+    save(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/',file_split),'data_test');
 else
     load(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/',file_split));
 end
@@ -159,10 +157,10 @@ end
 %  desc(i).imgfname : file name of original image
 
 lasti=1;
-for i = 1:length(data)
-     images_descs = get_descriptors_files(data,i,file_ext,desc_name,'train');
+for i = 1:length(data_train)
+     images_descs = get_descriptors_files(data_train,i,file_ext,desc_name,'train');
      for j = 1:length(images_descs) 
-        fname = fullfile(basepath,'img/egocart/',dataset_dir,data(i).classname,images_descs{j});
+        fname = fullfile(basepath,'img/egocart/',dataset_dir_train,data_train(i).classname,images_descs{j});
         fprintf('Loading %s /n',fname, '\n');
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
@@ -195,10 +193,10 @@ end
 %% Load pre-computed SIFT features for test images 
 
 lasti=1;
-for i = 1:length(data)
-     images_descs = get_descriptors_files(data,i,file_ext,desc_name,'test');
+for i = 1:length(data_test)
+     images_descs = get_descriptors_files(data_test,i,file_ext,desc_name,'test');
      for j = 1:length(images_descs) 
-        fname = fullfile(basepath,'img',dataset_dir,data(i).classname,images_descs{j});
+        fname = fullfile(basepath,'img/egocart/',dataset_dir_test,data_test(i).classname,images_descs{j});
         fprintf('Loading %s /n',fname);
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
@@ -218,10 +216,10 @@ if do_form_codebook
     % concatenate all descriptors from all images into a n x d matrix 
     DESC = [];
     labels_train = cat(1,desc_train.class);
-    for i=1:length(data)
+    for i=1:length(data_train)
         desc_class = desc_train(labels_train==i);
-        randimages = randperm(num_train_img);
-        randimages=randimages(1:5);
+        randimages = randperm(int16(data(i).n_images/100*40));
+        randimages = randimages(1:5);
         DESC = vertcat(DESC,desc_class(randimages).sift);
     end
 
@@ -247,6 +245,46 @@ if do_form_codebook
     clear DESC;
 end
 
+%% K-means descriptor quantization means assignment of each feature
+% descriptor with the identity of its nearest cluster mean, i.e.
+% visual word. Your task is to quantize SIFT descriptors in all
+% training and test images using the visual dictionary 'VC'
+% constructed above.
+%
+% TODO:
+% 1.1 compute Euclidean distances between VC and all descriptors
+%     in each training and test image. Hint: to compute all-to-all
+%     distance matrix for two sets of descriptors D1 & D2 use
+%     dmat=eucliddist(D1,D2);
+% 1.2 compute visual word ID for each feature by minimizing
+%     the distance between feature SIFT descriptors and VC.
+%     Hint: apply 'min' function to 'dmat' computed above along
+%     the dimension (1 or 2) corresponding to VC, i.g.:
+%     [mv,visword]=min(dmat,[],2); if you compute dmat as 
+%     dmat=eucliddist(dscr(i).sift,VC);
+
+if do_feat_quantization
+    fprintf('\nFeature quantization (hard-assignment)...\n');
+    for i=1:length(desc_train)  
+      sift = desc_train(i).sift(:,:);
+      dmat = eucliddist(sift,VC);
+      [quantdist,visword] = min(dmat,[],2); 
+      % save feature labels
+      desc_train(i).visword = visword;
+      desc_train(i).quantdist = quantdist;
+    end
+
+    for i=1:length(desc_test)    
+      sift = desc_test(i).sift(:,:); 
+      dmat = eucliddist(sift,VC);
+      [quantdist,visword] = min(dmat,[],2);
+      % save feature labels
+      desc_test(i).visword = visword;
+      desc_test(i).quantdist = quantdist;
+    end
+end
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%% Part 2: represent images with BOF histograms %%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -270,29 +308,113 @@ end
 N = size(VC,1); % number of visual words
 
 for i=1:length(desc_train) 
-    visword = desc_train(i).visword;    
-    
-    %H =...
+    visword = desc_train(i).visword;
+    H = histc(visword,[1:nwords_codebook]);
   
     % normalize bow-hist (L1 norm)
-    % ...
+    if norm_bof_hist
+        H = H/sum(H);
+    end
   
     % save histograms
-    %desc_train(i).bof = ...
+    desc_train(i).bof=H(:)';
 end
 
 for i=1:length(desc_test) 
-    visword = desc_test(i).visword;  
-    
-    %H =...
+    visword = desc_test(i).visword;
+    H = histc(visword,[1:nwords_codebook]);
   
     % normalize bow-hist (L1 norm)
-    % ...
-    
+    if norm_bof_hist
+        H = H/sum(H);
+    end
+  
     % save histograms
-    %desc_test(i).bof = ...
+    desc_test(i).bof=H(:)';
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   End of EXERCISE 2                                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% Part 3: image classification %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Concatenate bof-histograms into training and test matrices 
+bof_train=cat(1,desc_train.bof);
+bof_test=cat(1,desc_test.bof);
+if do_svm_llc_linar_classification
+    llc_train = cat(1,desc_train.llc);
+    llc_test = cat(1,desc_test.llc);
+end
+
+% Construct label Concatenate bof-histograms into training and test matrices 
+labels_train=cat(1,desc_train.class);
+labels_test=cat(1,desc_test.class);
+
+
+%% NN classification %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if do_L2_NN_classification
+    % Compute L2 distance between BOFs of test and training images
+    bof_l2dist=eucliddist(bof_test,bof_train);
+    
+    % Nearest neighbor classification (1-NN) using L2 distance
+    [mv,mi] = min(bof_l2dist,[],2);
+    bof_l2lab = labels_train(mi);
+    
+    method_name='NN L2';
+    acc=sum(bof_l2lab==labels_test)/length(labels_test);
+    fprintf('\n*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
+   
+    % Compute classification accuracy
+    compute_accuracy(data,labels_test,bof_l2lab,classes,method_name,desc_test,...
+                      visualize_confmat & have_screen,... 
+                      visualize_res & have_screen);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   End of EXERCISE 2                                                     %
+%                                                                         %
+%   EXERCISE 3: Image classification                                      %
+%                                                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                           
+%% Repeat Nearest Neighbor image classification using Chi2 distance
+% instead of L2. Hint: Chi2 distance between two row-vectors A,B can  
+% be computed with d=chi2(A,B);
+%
+% TODO:
+% 3.1 Nearest Neighbor classification with Chi2 distance
+%     Compute and compare overall and per-class classification
+%     accuracies to the L2 classification above
+
+
+if do_chi2_NN_classification
+    % compute pair-wise CHI2
+    bof_chi2dist = zeros(size(bof_test,1),size(bof_train,1));
+    
+    % bof_chi2dist = slmetric_pw(bof_train, bof_test, 'chisq');
+    for i = 1:size(bof_test,1)
+        for j = 1:size(bof_train,1)
+            bof_chi2dist(i,j) = chi2(bof_test(i,:),bof_train(j,:)); 
+        end
+    end
+
+    % Nearest neighbor classification (1-NN) using Chi2 distance
+    [mv,mi] = min(bof_chi2dist,[],2);
+    bof_chi2lab = labels_train(mi);
+
+    method_name='NN Chi-2';
+    acc=sum(bof_chi2lab==labels_test)/length(labels_test);
+    fprintf('*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
+ 
+    % Compute classification accuracy
+    compute_accuracy(data,labels_test,bof_chi2lab,classes,method_name,desc_test,...
+                      visualize_confmat & have_screen,... 
+                      visualize_res & have_screen);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   End of EXERCISE 3.1                                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
