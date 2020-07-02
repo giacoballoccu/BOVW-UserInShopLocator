@@ -59,10 +59,13 @@ visualize_res = 0;
 have_screen = ~isempty(getenv('DISPLAY'));
 
 % PATHS
+%basepath = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
 basepath = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
 traintxtpath = strcat(basepath, 'img/egocart', '/train_set/train_set.txt');
 testtxtpath = strcat(basepath, 'img/egocart', '/test_set/test_set.txt');
 wdir = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
+%wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
+
 libsvmpath = [ wdir, fullfile('lib','libsvm-3.11','matlab')];
 addpath(libsvmpath)
 
