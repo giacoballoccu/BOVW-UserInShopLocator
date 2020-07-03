@@ -345,6 +345,28 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+%%%%LLC Coding
+if do_svm_llc_linar_classification
+    for i=1:length(desc_train)
+        disp(desc_train(i).imgfname);
+        desc_train(i).llc = max(LLC_coding_appr(VC,desc_train(i).sift)); %max-pooling
+        desc_train(i).llc=desc_train(i).llc/norm(desc_train(i).llc); %L2 normalization
+    end
+    for i=1:length(desc_test) 
+        disp(desc_test(i).imgfname);
+        desc_test(i).llc = max(LLC_coding_appr(VC,desc_test(i).sift));
+        desc_test(i).llc=desc_test(i).llc/norm(desc_test(i).llc);
+    end
+    save(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/','desc_train.mat'),'desc_train',  '-v7.3');
+    save(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/','desc_test.mat'),'desc_test',  '-v7.3');
+else
+    load(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/','desc_train.mat'));
+    load(fullfile(strcat(basepath, 'img/egocart'),'/test_set/split_by_class_RGB/','desc_test.mat'));
+end
+
+
+%%%%end LLC coding
+
 % Concatenate bof-histograms into training and test matrices 
 bof_train=cat(1,desc_train.bof);
 bof_test=cat(1,desc_test.bof);
@@ -421,4 +443,4 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   End of EXERCISE 3.1                                                   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
