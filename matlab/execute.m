@@ -39,32 +39,33 @@ desc_name = 'dsift';
 %desc_name = 'msdsift';
 
 % FLAGS
-do_create_folders_class = 0
-do_convert_input = 0
+do_create_folders_class = 0;
+do_convert_input = 0;
 do_feat_extraction_test = 0;
 do_feat_extraction_train = 0;
 do_split_sets_train = 0;
 do_split_sets_test = 0;
+do_svm_llc_linar_classification=1;
 
 do_form_codebook = 1;
 do_feat_quantization = 1;
 
 do_L2_NN_classification = 1;
-do_chi2_NN_classification = 0;
+do_chi2_NN_classification = 1;
 
-visualize_feat = 0;
-visualize_words = 0;
-visualize_confmat = 0;
-visualize_res = 0;
+visualize_feat = 1;
+visualize_words = 1;
+visualize_confmat = 1;
+visualize_res = 1;
 have_screen = ~isempty(getenv('DISPLAY'));
 
 % PATHS
-%basepath = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
-basepath = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
+basepath = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
+%basepath = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
 traintxtpath = strcat(basepath, 'img/egocart', '/train_set/train_set.txt');
 testtxtpath = strcat(basepath, 'img/egocart', '/test_set/test_set.txt');
-wdir = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
-%wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
+%wdir = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
+wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
 
 libsvmpath = [ wdir, fullfile('lib','libsvm-3.11','matlab')];
 addpath(libsvmpath)
@@ -164,7 +165,7 @@ for i = 1:length(data_train)
      images_descs = get_descriptors_files(data_train,i,file_ext,desc_name,'train');
      for j = 1:length(images_descs) 
         fname = fullfile(basepath,'img/egocart/',dataset_dir_train,data_train(i).classname,images_descs{j});
-        fprintf('Loading %s /n',fname, '\n');
+        fprintf('Loading %s \n',fname, '\n');
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
         tmp.desc.imgfname=regexprep(fname,['.' desc_name],'.jpg');
@@ -178,7 +179,7 @@ end
 %% Visualize SIFT features for training images
 if (visualize_feat && have_screen)
     nti=10;
-    fprintf('/nVisualize features for %d training images/n', nti);
+    fprintf('\nVisualize features for %d training images\n', nti);
     imgind=randperm(length(desc_train));
     for i=1:nti
         d=desc_train(imgind(i));
@@ -200,7 +201,7 @@ for i = 1:length(data_test)
      images_descs = get_descriptors_files(data_test,i,file_ext,desc_name,'test');
      for j = 1:length(images_descs) 
         fname = fullfile(basepath,'img/egocart/',dataset_dir_test,data_test(i).classname,images_descs{j});
-        fprintf('Loading %s /n',fname);
+        fprintf('Loading %s \n',fname);
         tmp = load(fname,'-mat');
         tmp.desc.class=i;
         tmp.desc.imgfname=regexprep(fname,['.' desc_name],'.jpg');
@@ -214,14 +215,14 @@ end
 %% Build visual vocabulary using k-means %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if do_form_codebook
-    fprintf('/nBuild visual vocabulary:/n');
+    fprintf('\nBuild visual vocabulary:\n');
 
     % concatenate all descriptors from all images into a n x d matrix 
     DESC = [];
     labels_train = cat(1,desc_train.class);
     for i=1:length(data_train)
         desc_class = desc_train(labels_train==i);
-        randimages = randperm(int16(data(i).n_images/100*40));
+        randimages = randperm(int16(data_train(i).n_images/100*15));
         randimages = randimages(1:5);
         DESC = vertcat(DESC,desc_class(randimages).sift);
     end
@@ -234,7 +235,7 @@ if do_form_codebook
 
     % run k-means
     K = nwords_codebook; % size of visual vocabulary
-    fprintf('running k-means clustering of %d points into %d clusters.../n',...
+    fprintf('running k-means clustering of %d points into %d clusters...\n',...
         size(DESC,1),K)
     % input matrix needs to be transposed as the k-means function expects 
     % one point per column rather than per row
