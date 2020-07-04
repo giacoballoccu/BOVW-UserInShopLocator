@@ -71,14 +71,14 @@ addpath(libsvmpath)
 
 % BOW PARAMETERS
 %max_km_iters = 50; % maximum number of iterations for k-means -original
-max_km_iters = 25;
+max_km_iters = 50;
 %nfeat_codebook = 60000; % number of descriptors used by k-means for the codebook generation -original
-nfeat_codebook = 30000; % number of descriptors used by k-means for the codebook generation -original
+nfeat_codebook = 60000; % number of descriptors used by k-means for the codebook generation -original
 norm_bof_hist = 1;
 
 % number of codewords (i.e. K for the k-means algorithm)
 %nwords_codebook = 500; -original
-nwords_codebook = 250;
+nwords_codebook = 500;
 % image file extension
 file_ext='jpg';
 
@@ -437,7 +437,7 @@ if do_chi2_NN_classification
     fprintf('*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
  
     % Compute classification accuracy
-    compute_accuracy(data_test,labels_test,bof_chi2lab,classes,method_name,desc_test,...
+    compute_accuracy(data,labels_test,bof_chi2lab,classes,method_name,desc_test,...
                       visualize_confmat & have_screen,... 
                       visualize_res & have_screen);
 end

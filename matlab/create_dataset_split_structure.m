@@ -14,7 +14,7 @@
 %    files: {1x1074 cell}; cell array with file names withouth path, e.g. img_100.jpg
 %    train_id: [1x1074 logical]; Boolean array indicating training files
 %    test_id: [1x1074 logical];  Boolean array indicating test files                                   
-function data = create_dataset_split_structure(main_dir, is_train, file_ext)
+function data = create_dataset_split_structure(main_dir, is_train, sample_percentage, file_ext)
     if is_train
         category_dirs_path = strcat(main_dir, '/train_set/split_by_class_RGB')
         category_dirs = dir(category_dirs_path);
@@ -33,9 +33,9 @@ function data = create_dataset_split_structure(main_dir, is_train, file_ext)
         if isdir(fullfile(category_dirs_path,category_dirs(c).name)) && ~strcmp(category_dirs(c).name,'.') ...
                 && ~strcmp(category_dirs(c).name,'..')
             imgdir = dir(fullfile(category_dirs_path,category_dirs(c).name, ['*.' file_ext]));
-            data(c).n_images = length(imgdir);
+            data(c).n_images = int16(length(imgdir) / 100 * sample_percentage);
             data(c).classname = category_dirs(c).name;
-            data(c).files = {imgdir(:).name};
+            data(c).files = {imgdir(1:data(c).n_images).name};
             if is_train
                 data(c).train_id = true(1,data(c).n_images);
                 data(c).test_id = false(1,data(c).n_images);
@@ -45,5 +45,4 @@ function data = create_dataset_split_structure(main_dir, is_train, file_ext)
             end       
         end
     end
-    
 end
