@@ -14,7 +14,7 @@ nbase=size(B,1);
 % find k nearest neighbors
 XX = sum(X.*X, 2);
 BB = sum(B.*B, 2);
-D  = repmat(XX, 1, nbase)-2*X*B'+repmat(BB', nframe, 1);
+D  = repmat(XX, 1, nbase)- 2*X*B'+repmat(BB', nframe, 1); 
 IDX = zeros(nframe, knn);
 for i = 1:nframe,
 	d = D(i,:);
