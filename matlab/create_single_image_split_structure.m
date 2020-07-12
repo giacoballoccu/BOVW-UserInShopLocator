@@ -29,7 +29,7 @@ function data = create_single_image_split_structure(main_dir, image_name)
             if length(imgdir) == 0
                 data(c).n_images = length(imgdir);
                 data(c).classname = category_dirs(c).name;
-                data(c).files = {}
+                data(c).files = {};
                 data(c).train_id = false;
                 data(c).test_id = false;   
             else

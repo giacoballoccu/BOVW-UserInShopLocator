@@ -52,10 +52,10 @@ do_svm_llc_linar_classification=1;
 do_L2_NN_classification = 1;
 do_chi2_NN_classification = 1;
 
-visualize_feat = 1;
-visualize_words = 1;
+visualize_feat = 0;
+visualize_words = 0;
 visualize_confmat = 1;
-visualize_res = 1;
+visualize_res = 0;
 have_screen = ~isempty(getenv('DISPLAY'));
 
 % PATHS
@@ -87,7 +87,7 @@ if do_split_sets_train
 else
     load(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split));
 end
-classes = {data_train.classname}; % create cell array of class name strings
+%classes = {data_train.classname}; % create cell array of class name strings
 % Extract SIFT features fon training and test images
 if do_feat_extraction_train   
     extract_sift_features(fullfile(basepath,'img/egocart','/train_set/split_by_class_RGB/'),desc_name)    
@@ -390,7 +390,7 @@ if do_evalution
         method_name='NN L2';
         acc=sum(bof_l2lab==labels_test)/length(labels_test);
         fprintf('\n*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
-        classes = {'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'};
+
         % Compute classification accuracy
         compute_accuracy(data_train,labels_test,bof_l2lab,classes,method_name,desc_test,...
                           visualize_confmat & have_screen,... 

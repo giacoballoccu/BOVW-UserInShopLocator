@@ -36,8 +36,8 @@ dataset_dir_test = '/test_set/split_by_class_DEPTH';
 % Harris-Laplace keypoints) or 'dsift' for dense features detection (SIFT
 % descriptors computed at a grid of overlapped patches
 
-desc_name = 'sift';
-%desc_name = 'dsift';
+%desc_name = 'sift';
+desc_name = 'dsift';
 %desc_name = 'msdsift';
 
 % FLAGS
@@ -99,9 +99,9 @@ testSet = table2cell(testSet);
 
 if do_create_folders_class
     for i = 1:16
-%         mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_RGB/'), int2str(i));
-%         mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_RGB/'), int2str(i));
-        mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_DEPTH/'), int2str(i));
+        mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_RGB/'), int2str(i));
+        mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_RGB/'), int2str(i));
+        %mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_DEPTH/'), int2str(i));
         mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_DEPTH/'), int2str(i));
     end
 end

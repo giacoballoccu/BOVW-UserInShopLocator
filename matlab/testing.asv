@@ -1,11 +1,11 @@
 clearvars data_test desc_test bof_l2lab;
 
-test_image = '3L001880.jpg'; %12
+test_image = '3L026200.jpg'; %15
 % Create a new dataset split
 data_test = create_single_image_split_structure(strcat(basepath, 'img/egocart'), test_image);
 % Extract SIFT features from test images
 if do_feat_extraction_test  
-    extract_sift_features(fullfile(basepath,'img/egocart',test_image),desc_name);    
+    extract_sift_features(fullfile(basepath,'img/egocart',test_image),desc_name)    
 end
 %% Load pre-computed SIFT features for test images 
 lasti=1;
@@ -20,8 +20,8 @@ for i = 1:length(data_test)
         desc_test(lasti)=tmp.desc;
         desc_test(lasti).sift = single(desc_test(lasti).sift);
         lasti=lasti+1;
-     end
-end
+    end;
+end;
 %% K-means descriptor quantization means assignment of each feature
 
  for i=1:length(desc_test)    
@@ -72,16 +72,10 @@ if do_L2_NN_classification
     % Access the table for these specific rows
     outReal=testSet(idxReal,:);
    
-    [filepath,name,ext] = fileparts(desc_train(mi).imgfname);
+    [filepath,name,ext] = fileparts(desc_train(10670).imgfname);
     idx = ismember(trainSet(:,1), string({strcat(name,ext)}));
     % Access the table for these specific rows
-    out=trainSet(idx,:);
-    if bof_l2lab == labels_test
-        fprintf("\nCorrect prediction! \n");
-    else
-        fprintf("\nError \n");
-    end
-    fprintf("\nPredicted class: %d, Correct class: %d \nPredicted Position: (%d, %d) Actual position: (%d, %d) \n", str2double(string(classes(bof_l2lab))), str2double(string(classes(labels_test))),str2double(string(out(3))), str2double(string(out(4))), str2double(string(outReal(3))), str2double(string(outReal(4))));
-    fprintf("Difference in position \nx: %d y: %d \n", (str2double(string(out(3))) - str2double(string(outReal(3)))) ,(str2double(string(out(4))) - str2double(string(outReal(4)))) );
-    fprintf("Predicted image : %s \n", desc_train(mi).imgfname);
+    out=testSet(idx,:);
+    fprintf("Predict class: %d, Correct class: %d, Predicted Position: %d %d Actual position: %d %d \n", str2double(string(classes(bof_l2lab))), str2double(string(classes(labels_test))),str2double(string(outReal(3))), str2double(string(outReal(4))));
+    fprintf("Predicted image : %s ", desc_train(mi).imgfname);
 end
