@@ -1,7 +1,6 @@
 clearvars data_test desc_test bof_l2lab;
-dataset_dir_train ='/train_set/split_by_class_RGB';
-dataset_dir_test = '/test_set/split_by_class_RGB';
-test_image = '7L015660.jpg'; %15
+
+test_image = '3L026200.jpg'; %15
 % Create a new dataset split
 data_test = create_single_image_split_structure(strcat(basepath, 'img/egocart'), test_image);
 % Extract SIFT features from test images
@@ -70,7 +69,5 @@ if do_L2_NN_classification
     [mv,mi] = min(bof_l2dist,[],2);
     bof_l2lab = labels_train(mi);
     
-    method_name='NN L2';
-    acc=sum(bof_l2lab==labels_test)/length(labels_test);
-    fprintf('\n*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
+    fprintf("Predict %d, Correct %d \n", int32(cellstr(classes(bof_l2lab))), int32(cellstr(classes(labels_test))));
 end

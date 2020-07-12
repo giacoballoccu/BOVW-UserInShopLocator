@@ -36,6 +36,7 @@ function data = create_dataset_split_structure(main_dir, is_train, sample_percen
             data(c).n_images = int16(length(imgdir) / 100 * sample_percentage);
             data(c).classname = category_dirs(c).name;
             data(c).files = {imgdir(1:data(c).n_images).name};
+            
             if is_train
                 data(c).train_id = true(1,data(c).n_images);
                 data(c).test_id = false(1,data(c).n_images);
@@ -45,4 +46,5 @@ function data = create_dataset_split_structure(main_dir, is_train, sample_percen
             end       
         end
     end
+    
 end

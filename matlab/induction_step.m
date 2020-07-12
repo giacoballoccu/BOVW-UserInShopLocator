@@ -26,7 +26,7 @@ close all;
 % DATASET
 dataset_dir_train ='/train_set/split_by_class_RGB';
 dataset_dir_test = '/test_set/split_by_class_RGB';
-test_image = '3L024980.jpg'; %13
+
 % FEATURES extraction methods
 % 'sift' for sparse features detection (SIFT descriptors computed at  
 % Harris-Laplace keypoints) or 'dsift' for dense features detection (SIFT
@@ -37,6 +37,8 @@ desc_name = 'dsift';
 %desc_name = 'msdsift';
 
 % FLAGS
+do_evalution =1;
+
 do_create_folders_class = 0;
 do_convert_input = 0;
 do_feat_extraction_test = 0;
@@ -68,9 +70,9 @@ wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
 max_km_iters = 50; % maximum number of iterations for k-means
 nfeat_codebook = 60000; % number of descriptors used by k-means for the codebook generation
 norm_bof_hist = 1;
-percentage_train = 100;
+percentage_train = 5;
 % number of images selected for training (e.g. 30 for Caltech-101)
-num_train_img = 100;
+%num_train_img = 100;
 % number of codewords (i.e. K for the k-means algorithm)
 nwords_codebook = 500;
 
@@ -159,7 +161,7 @@ if do_form_codebook
     labels_train = cat(1,desc_train.class);
     for i=1:length(data_train)
         desc_class = desc_train(labels_train==i);
-        randimages = randperm(num_train_img);
+        randimages = randperm(percentage_train);
         randimages =randimages(1:5);
         DESC = vertcat(DESC,desc_class(randimages).sift);
     end
@@ -188,11 +190,6 @@ end
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                         %
-%   EXERCISE 1: K-means Descriptor quantization                           %
-%                                                                         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% K-means descriptor quantization means assignment of each feature
 % descriptor with the identity of its nearest cluster mean, i.e.
@@ -225,9 +222,6 @@ if do_feat_quantization
 
    
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   End of EXERCISE 1                                                     %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %% Visualize visual words (i.e. clusters) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,11 +263,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                         %
-%   EXERCISE 2: Bag-of-Features image classification                      %
-%                                                                         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Represent each image by the normalized histogram of visual
 % word labels of its features. Compute word histogram H over 
@@ -299,11 +288,6 @@ for i=1:length(desc_train)
     desc_train(i).bof=H(:)';
 end
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   End of EXERCISE 2                                                     %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%LLC Coding
@@ -333,70 +317,118 @@ end
 labels_train=cat(1,desc_train.class);
 
 
-%% NN classification %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if do_L2_NN_classification
-    % Compute L2 distance between BOFs of test and training images
-    bof_l2dist=eucliddist(bof_test,bof_train);
+if do_evalution
+    data_test = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 0, 100, file_ext);
+    % Extract SIFT features from test images
+    if do_feat_extraction_test  
+        extract_sift_features(fullfile(basepath,'img/egocart','/test_set/split_by_class_RGB/'),desc_name);    
+    end
+    %% Load pre-computed SIFT features for test images 
+    lasti=1;
+    for i = 1:length(data_test)
+         images_descs = get_descriptors_files(data_test,i,file_ext,desc_name,'test');
+         for j = 1:length(images_descs)
+            fname = fullfile(basepath,'img/egocart',dataset_dir_test,data_test(i).classname,images_descs{j});
+            fprintf('Loading %s \n',fname);
+            tmp = load(fname,'-mat');
+            tmp.desc.class=i;
+            tmp.desc.imgfname=regexprep(fname,['.' desc_name],'.jpg');
+            desc_test(lasti)=tmp.desc;
+            desc_test(lasti).sift = single(desc_test(lasti).sift);
+            lasti=lasti+1;
+        end;
+    end;
+    %% K-means descriptor quantization means assignment of each feature
+
+     for i=1:length(desc_test)    
+          sift = desc_test(i).sift(:,:); 
+          dmat = eucliddist(sift,VC);
+          [quantdist,visword] = min(dmat,[],2);
+          % save feature labels
+          desc_test(i).visword = visword;
+          desc_test(i).quantdist = quantdist;
+     end
+    %% Represent each image by the normalized histogram of visual
+
+    for i=1:length(desc_test) 
+        visword = desc_test(i).visword;
+        H = histc(visword,[1:nwords_codebook]);
+
+        % normalize bow-hist (L1 norm)
+        if norm_bof_hist
+            H = H/sum(H);
+        end
+
+        % save histograms
+        desc_test(i).bof=H(:)';
+    end
+    %%%%LLC Coding
+
+    for i=1:length(desc_test) 
+       disp(desc_test(i).imgfname);
+       desc_test(i).llc = max(LLC_coding_appr(VC,desc_test(i).sift));
+       desc_test(i).llc=desc_test(i).llc/norm(desc_test(i).llc);
+    end
+    % Concatenate bof-histograms into a test matrix
+
+    bof_test=cat(1,desc_test.bof);
+    llc_test = cat(1,desc_test.llc);
+
+    % Construct label Concatenate bof-histograms into a test matrix 
+    labels_test=cat(1,desc_test.class);
+
+    %% NN classification %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        % Compute L2 distance between BOFs of test and training images
+        bof_l2dist=eucliddist(bof_test,bof_train);
+
+        % Nearest neighbor classification (1-NN) using L2 distance
+        [mv,mi] = min(bof_l2dist,[],2);
+        bof_l2lab = labels_train(mi);
+
+        method_name='NN L2';
+        acc=sum(bof_l2lab==labels_test)/length(labels_test);
+        fprintf('\n*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
+
+        % Compute classification accuracy
+        compute_accuracy(data_train,labels_test,bof_l2lab,classes,method_name,desc_test,...
+                          visualize_confmat & have_screen,... 
+                          visualize_res & have_screen);
     
-    % Nearest neighbor classification (1-NN) using L2 distance
-    [mv,mi] = min(bof_l2dist,[],2);
-    bof_l2lab = labels_train(mi);
+
+
+    %% Repeat Nearest Neighbor image classification using Chi2 distance
+    % instead of L2. Hint: Chi2 distance between two row-vectors A,B can  
+    % be computed with d=chi2(A,B);
+    %
+    % TODO:
+    % 3.1 Nearest Neighbor classification with Chi2 distance
+    %     Compute and compare overall and per-class classification
+    %     accuracies to the L2 classification above
+
+
+         % compute pair-wise CHI2
+        bof_chi2dist = zeros(size(bof_test,1),size(bof_train,1));
+        
+        % bof_chi2dist = slmetric_pw(bof_train, bof_test, 'chisq');
+        for i = 1:size(bof_test,1)
+            for j = 1:size(bof_train,1)
+                bof_chi2dist(i,j) = chi2(bof_test(i,:),bof_train(j,:)); 
+            end
+        end
     
-    method_name='NN L2';
-    acc=sum(bof_l2lab==labels_test)/length(labels_test);
-    fprintf('\n*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
-   
-    % Compute classification accuracy
-    compute_accuracy(data,labels_test,bof_l2lab,classes,method_name,desc_test,...
-                      visualize_confmat & have_screen,... 
-                      visualize_res & have_screen);
+        % Nearest neighbor classification (1-NN) using Chi2 distance
+        [mv,mi] = min(bof_chi2dist,[],2);
+        bof_chi2lab = labels_train(mi);
+    
+        method_name='NN Chi-2';
+        acc=sum(bof_chi2lab==labels_test)/length(labels_test);
+        fprintf('*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
+     
+        % Compute classification accuracy
+        compute_accuracy(data_train,labels_test,bof_chi2lab,classes,method_name,desc_test,...
+                          visualize_confmat & have_screen,... 
+                          visualize_res & have_screen);
+    
 end
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                         %
-%   EXERCISE 3: Image classification                                      %
-%                                                                         %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                           
-%% Repeat Nearest Neighbor image classification using Chi2 distance
-% instead of L2. Hint: Chi2 distance between two row-vectors A,B can  
-% be computed with d=chi2(A,B);
-%
-% TODO:
-% 3.1 Nearest Neighbor classification with Chi2 distance
-%     Compute and compare overall and per-class classification
-%     accuracies to the L2 classification above
-
-
-% if do_chi2_NN_classification
-%     % compute pair-wise CHI2
-%     bof_chi2dist = zeros(size(bof_test,1),size(bof_train,1));
-%     
-%     % bof_chi2dist = slmetric_pw(bof_train, bof_test, 'chisq');
-%     for i = 1:size(bof_test,1)
-%         for j = 1:size(bof_train,1)
-%             bof_chi2dist(i,j) = chi2(bof_test(i,:),bof_train(j,:)); 
-%         end
-%     end
-% 
-%     % Nearest neighbor classification (1-NN) using Chi2 distance
-%     [mv,mi] = min(bof_chi2dist,[],2);
-%     bof_chi2lab = labels_train(mi);
-% 
-%     method_name='NN Chi-2';
-%     acc=sum(bof_chi2lab==labels_test)/length(labels_test);
-%     fprintf('*** %s ***\nAccuracy = %1.4f%% (classification)\n',method_name,acc*100);
-%  
-%     % Compute classification accuracy
-%     compute_accuracy(data,labels_test,bof_chi2lab,classes,method_name,desc_test,...
-%                       visualize_confmat & have_screen,... 
-%                       visualize_res & have_screen);
-% end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   End of EXERCISE 3.1                                                   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-

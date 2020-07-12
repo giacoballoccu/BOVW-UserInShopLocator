@@ -123,7 +123,7 @@ end
 % Create a new dataset split
 file_split = 'split.mat';
 if do_split_sets_train    
-    data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 1 , sampling, file_ext);
+    data_train = create_dataset_split_structure(strcat(basepath, 'img/egocart'), 1 , sampling, file_ext, trainSet(:,1:4));
     save(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/',file_split),'data_train');
 else
     load(fullfile(strcat(basepath, 'img/egocart'),'/train_set/split_by_class_RGB/', file_split));
