@@ -40,12 +40,12 @@ function data = create_dataset_split_structure(main_dir, is_train, sample_percen
             data(c).n_images = int16(length(imgdir) / 100 * sample_percentage);
             data(c).classname = category_dirs(c).name;
             if sample_percentage ==100
-                data(c).files = {imgdir(1:data(c).n_images).name};
+                data(c).files = {imgdir(1:data(c).n_images).name}
             else
                 data(c).files = {}
                 idx = randperm(numel(imgdir), data(c).n_images);
                 for k =1:data(c).n_images
-                    data(c).files{end+1} = imgdir(idx(k)).name;
+                    data(c).files = imgdir(idx(k)).name;
                 end
             end
             if is_train

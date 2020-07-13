@@ -1,9 +1,9 @@
-function compute_accuracy(data,labels_test,labels_pred,classes,method_name,desc_test,visualize_confmat,visualize_res)
+function acc = compute_accuracy(data,labels_test,labels_pred,classes,method_name,desc_test,visualize_confmat,visualize_res)
     for i=1:length(data)
             ind=find(labels_test==i);
             acc_class=mean(labels_pred(ind)==labels_test(ind));
     end
-    acc=mean(labels_pred==labels_test);
+    accnn=mean(labels_pred==labels_test);
     CM = confmatrix(labels_test,labels_pred,length(data));
     % normalize CM considering categories for each class (e.g. in Caltech-101 
     % it is very important since some categories have few images) 
@@ -19,7 +19,6 @@ function compute_accuracy(data,labels_test,labels_pred,classes,method_name,desc_
     end
     acc = mean(diag(CMnorm));
     fprintf('OVERALL %s classification accuracy: %1.4f\n\n',method_name,acc);
-
     %% VISUALIZE examples %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %  Illustrate correcly classified and missclassified samples of each class
     if (visualize_res)

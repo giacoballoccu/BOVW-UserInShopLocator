@@ -61,12 +61,12 @@ visualize_res = 0;
 have_screen = ~isempty(getenv('DISPLAY'));
 
 % PATHS
-basepath = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
-%basepath = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
+%basepath = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
+basepath = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
 traintxtpath = strcat(basepath, 'img/egocart', '/train_set/train_set.txt');
 testtxtpath = strcat(basepath, 'img/egocart', '/test_set/test_set.txt');
-%wdir = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
-wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
+wdir = 'C:/Users/Giaco/Desktop/cv_project/actual_project/';
+%wdir = 'C:/Users/Alessia/Desktop/CV_Project/actual_project/';
 
 libsvmpath = [ wdir, fullfile('lib','libsvm-3.11','matlab')];
 addpath(libsvmpath)
@@ -78,7 +78,7 @@ max_km_iters = 50;
 nfeat_codebook = 75000;
 norm_bof_hist = 1;
 
-sampling = 30;
+sampling = 100;
 % number of codewords (i.e. K for the k-means algorithm)
 %nwords_codebook = 500; -original
 nwords_codebook = 500;
@@ -98,6 +98,7 @@ testSet = testSet(:,1:7);
 testSet = table2cell(testSet);
 
 if do_create_folders_class
+    global T;
     for i = 1:16
 %         mkdir(strcat(basepath, 'img/egocart/train_set/split_by_class_RGB/'), int2str(i));
 %         mkdir(strcat(basepath, 'img/egocart/test_set/split_by_class_RGB/'), int2str(i));
